@@ -9,7 +9,7 @@ pipeline {
         
         EC2_USER = "ec2-user"
         EC2_HOST = "18.205.7.220"
-        EC2_KEY = "/var/jenkins_home/keys/15mar.pem" // Update with Jenkins path to your .pem file
+        EC2_KEY = "/var/jenkins_home/keys/15mar.pem" // Path inside Jenkins container
     }
 
     stages {
@@ -61,26 +61,28 @@ pipeline {
         }
 
         stage('Deploy to EC2') {
-    	     steps {
-        	script {
-           	  def IMAGE_TO_DEPLOY = (env.BRANCH_NAME == 'dev') ? "$DOCKER_USER/$DEV_REPO:latest" : "$DOCKER_USER/$PROD_REPO:latest"
-                  withCredentials([usernamePassword(
-                   credentialsId: 'dockerhub-cred',
-                   usernameVariable: 'DOCKER_HUB_USER',
-                   passwordVariable: 'DOCKER_HUB_PASS'
-                 )]) {
-                    sh """
-                    ssh -o StrictHostKeyChecking=no -i $EC2_KEY $EC2_USER@$EC2_HOST \\
-                    'echo $DOCKER_HUB_PASS | docker login -u $DOCKER_HUB_USER --password-stdin && \\
-                     docker stop app-container || true && \\
-                     docker rm app-container || true && \\
-                     docker pull $IMAGE_TO_DEPLOY && \\
-                     docker run -d -p 80:80 --name app-container $IMAGE_TO_DEPLOY'
-                    """
+            steps {
+                script {
+                    def IMAGE_TO_DEPLOY = (env.BRANCH_NAME == 'dev') ? "$DOCKER_USER/$DEV_REPO:latest" : "$DOCKER_USER/$PROD_REPO:latest"
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-cred',
+                        usernameVariable: 'DOCKER_HUB_USER',
+                        passwordVariable: 'DOCKER_HUB_PASS'
+                    )]) {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no -i $EC2_KEY $EC2_USER@$EC2_HOST \\
+                        'echo $DOCKER_HUB_PASS | docker login -u $DOCKER_HUB_USER --password-stdin && \\
+                         docker stop app-container || true && \\
+                         docker rm app-container || true && \\
+                         docker pull $IMAGE_TO_DEPLOY && \\
+                         docker run -d -p 80:80 --name app-container $IMAGE_TO_DEPLOY'
+                        """
+                    }
+                }
             }
         }
+
     }
-}
 
     post {
         always {
