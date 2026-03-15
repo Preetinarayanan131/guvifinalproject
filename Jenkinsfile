@@ -29,10 +29,19 @@ pipeline {
         }
 
         stage('Push to Docker Hub DEV Repo') {
-            steps {
-                sh 'docker push $DOCKER_USER/$DEV_REPO:latest'
-            }
-        }
+    	   steps {
+	        withCredentials([usernamePassword(
+                credentialsId: 'dockerhub-cred',
+                usernameVariable: 'DOCKER_USER',
+                passwordVariable: 'DOCKER_PASS'
+            )]) {
+            	sh '''
+            	echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+            	docker push preethibino/guvifinalproject-dev:latest
+            	'''
+              }
+          }
+       }
 
         stage('Deploy Container') {
             steps {
