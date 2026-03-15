@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_USER = "preethibino"
         DEV_REPO = "guvifinalproject-dev"
-        IMAGE_NAME = "react-devops-image"
+        IMAGE_NAME = "latest"
     }
 
     stages {
