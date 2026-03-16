@@ -44,7 +44,7 @@ stages {
         }
         steps {
             sh '''
-            docker tag $DOCKER_USER/$IMAGE_NAME:latest $DOCKER_USER/ecommerce-dev:latest
+            docker tag $DOCKER_USER/$IMAGE_NAME:latest $DOCKER_USER/guvifinalproject-dev:latest
             docker push $DOCKER_USER/ecommerce-dev:latest
             '''
         }
@@ -56,7 +56,7 @@ stages {
         }
         steps {
             sh '''
-            docker tag $DOCKER_USER/$IMAGE_NAME:latest $DOCKER_USER/ecommerce-prod:latest
+            docker tag $DOCKER_USER/$IMAGE_NAME:latest $DOCKER_USER/guvifinalproject-prod:latest
             docker push $DOCKER_USER/ecommerce-prod:latest
             '''
         }
@@ -71,7 +71,7 @@ stages {
             docker run -d \
               --name ecommerce-container \
               -p 80:80 \
-              $DOCKER_USER/$IMAGE_NAME:latest
+              $DOCKER_USER/guvifinalproject-dev:latest
             '''
         }
     }
