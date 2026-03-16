@@ -14,7 +14,15 @@ stages {
             checkout scm
         }
     }
-
+    stage('Determine Branch') {
+    steps {
+        script {
+            // Get current branch from Git
+            BRANCH_NAME = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+            echo "Current branch detected: ${BRANCH_NAME}"
+        }
+    }
+}
     stage('Build Docker Image') {
         steps {
             sh 'docker build -t $DOCKER_USER/$IMAGE_NAME:latest .'
@@ -32,7 +40,7 @@ stages {
         }
     }
 
-    // 🔥 ALWAYS RUNS — NO SKIP ISSUE
+    //  ALWAYS RUNS — NO SKIP ISSUE
     stage('Tag & Push Image') {
         steps {
 	  
@@ -42,7 +50,7 @@ stages {
             echo "Current branch: ${branch}"
 
             sh """
-            if [ "${branch}" = "master" ]; then
+            if [ "${BRANCH_NAME}" = "master" ]; then
                 TARGET="$DOCKER_USER/guvifinalproject-prod:latest"
             else
                 TARGET="$DOCKER_USER/guvifinalproject-dev:latest"
