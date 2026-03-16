@@ -35,20 +35,24 @@ stages {
     // 🔥 ALWAYS RUNS — NO SKIP ISSUE
     stage('Tag & Push Image') {
         steps {
-            sh '''
-            echo "Current branch: $BRANCH_NAME"
+	  
+          script{
+	    // Capture branch name in shell
+            def branch = env.BRANCH_NAME
+            echo "Current branch: ${branch}"
 
-            if [ "$BRANCH_NAME" = "master" ]; then
+            sh """
+            if [ "${branch}" = "master" ]; then
                 TARGET="$DOCKER_USER/guvifinalproject-prod:latest"
             else
                 TARGET="$DOCKER_USER/guvifinalproject-dev:latest"
             fi
 
             echo "Pushing image to $TARGET"
-
             docker tag $DOCKER_USER/$IMAGE_NAME:latest $TARGET
             docker push $TARGET
-            '''
+            """
+	     }
         }
     }
 
