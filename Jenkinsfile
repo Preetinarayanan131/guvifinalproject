@@ -5,6 +5,7 @@ pipeline {
         DOCKER_USER = "preethibino"
         IMAGE_NAME  = "ecommerce-app"
 	GITHUB_CRED  = "github-pass"
+	DOCKER_PASS  = "docker-pass" 
     }
 
     stages {
@@ -37,7 +38,7 @@ pipeline {
 
         stage('Login to Docker Hub') {
             steps {
-                withCredentials([string(credentialsId: 'docker-pass', variable: 'DOCKER_PASS')]) {
+                withCredentials([string(credentialsId: '${DOCKER_PASS}', variable: 'DOCKER_PASS')]) {
                     sh '''
                     echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                     '''
