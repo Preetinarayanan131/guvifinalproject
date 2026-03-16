@@ -1,0 +1,11 @@
+[Code in GitHub] 
+        ↓ push dev branch
+   [Jenkins CI/CD]
+        ↓ build & push Docker image → dev repo
+   [Local / test deployment] (optional)
+        ↓ merge dev → master
+   [Jenkins CI/CD]
+        ↓ build & push Docker image → prod repo
+   [AWS EC2 Deployment] → container runs on port 80
+        ↓ monitoring
+   [App health & alerts]
