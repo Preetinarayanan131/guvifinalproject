@@ -1,95 +1,82 @@
 pipeline {
-    agent any
+agent any
 
-    environment {
-        DOCKER_USER = "preethibino"
-        DEV_REPO = "guvifinalproject-dev"
-        PROD_REPO = "guvifinalproject-prod"
-        IMAGE_NAME = "guvifinalproject"
-        
-        EC2_USER = "ec2-user"
-        EC2_HOST = "18.205.7.220"
-        EC2_KEY = "/var/jenkins_home/keys/15mar.pem" // Path inside Jenkins container
-    }
+```
+environment {
+    DOCKER_USER = "preethibino"
+    IMAGE_NAME = "ecommerce-app"
+}
 
-    stages {
+stages {
 
-        stage('Checkout Code') {
-            steps {
-                git branch: "${env.BRANCH_NAME}",
-                    url: 'https://github.com/Preetinarayanan131/guvifinalproject.git'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                sh "docker build -t $IMAGE_NAME:latest ."
-            }
-        }
-
-        stage('Tag Image') {
-            steps {
-                script {
-                    if (env.BRANCH_NAME == 'dev') {
-                        sh "docker tag $IMAGE_NAME:latest $DOCKER_USER/$DEV_REPO:latest"
-                    } else if (env.BRANCH_NAME == 'master') {
-                        sh "docker tag $IMAGE_NAME:latest $DOCKER_USER/$PROD_REPO:latest"
-                    }
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-cred', // Jenkins Docker Hub credentials ID
-                    usernameVariable: 'DOCKER_HUB_USER',
-                    passwordVariable: 'DOCKER_HUB_PASS'
-                )]) {
-                    script {
-                        sh """
-                        echo $DOCKER_HUB_PASS | docker login -u $DOCKER_HUB_USER --password-stdin
-                        """
-                        if (env.BRANCH_NAME == 'dev') {
-                            sh "docker push $DOCKER_USER/$DEV_REPO:latest"
-                        } else if (env.BRANCH_NAME == 'master') {
-                            sh "docker push $DOCKER_USER/$PROD_REPO:latest"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Deploy to EC2') {
-            steps {
-                script {
-                    def IMAGE_TO_DEPLOY = (env.BRANCH_NAME == 'dev') ? "$DOCKER_USER/$DEV_REPO:latest" : "$DOCKER_USER/$PROD_REPO:latest"
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhub-cred',
-                        usernameVariable: 'DOCKER_HUB_USER',
-                        passwordVariable: 'DOCKER_HUB_PASS'
-                    )]) {
-                        sh """
-                        ssh -o StrictHostKeyChecking=no -i $EC2_KEY $EC2_USER@$EC2_HOST \\
-                        'echo $DOCKER_HUB_PASS | docker login -u $DOCKER_HUB_USER --password-stdin && \\
-                         docker stop app-container || true && \\
-                         docker rm app-container || true && \\
-                         docker pull $IMAGE_TO_DEPLOY && \\
-                         docker run -d -p 80:80 --name app-container $IMAGE_TO_DEPLOY'
-                        """
-                    }
-                }
-            }
-        }
-
-    }
-
-    post {
-        always {
-            echo "Build finished for branch ${env.BRANCH_NAME}"
-        }
-        failure {
-            echo "Build failed for branch ${env.BRANCH_NAME}"
+    stage('Checkout Code') {
+        steps {
+            checkout scm
         }
     }
+
+    stage('Show Branch') {
+        steps {
+            echo "Building branch: ${env.BRANCH_NAME}"
+        }
+    }
+
+    stage('Build Docker Image') {
+        steps {
+            sh '''
+            docker build -t $DOCKER_USER/$IMAGE_NAME:latest .
+            '''
+        }
+    }
+
+    stage('Login to Docker Hub') {
+        steps {
+            withCredentials([string(credentialsId: 'docker-pass', variable: 'DOCKER_PASS')]) {
+                sh '''
+                echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                '''
+            }
+        }
+    }
+
+    stage('Push to DEV Repo') {
+        when {
+            branch 'dev'
+        }
+        steps {
+            sh '''
+            docker tag $DOCKER_USER/$IMAGE_NAME:latest $DOCKER_USER/ecommerce-dev:latest
+            docker push $DOCKER_USER/ecommerce-dev:latest
+            '''
+        }
+    }
+
+    stage('Push to PROD Repo') {
+        when {
+            branch 'master'
+        }
+        steps {
+            sh '''
+            docker tag $DOCKER_USER/$IMAGE_NAME:latest $DOCKER_USER/ecommerce-prod:latest
+            docker push $DOCKER_USER/ecommerce-prod:latest
+            '''
+        }
+    }
+
+    stage('Deploy Container on Port 80') {
+        steps {
+            sh '''
+            docker stop ecommerce-container || true
+            docker rm ecommerce-container || true
+
+            docker run -d \
+              --name ecommerce-container \
+              -p 80:80 \
+              $DOCKER_USER/$IMAGE_NAME:latest
+            '''
+        }
+    }
+}
+```
+
 }
