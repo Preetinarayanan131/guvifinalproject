@@ -4,25 +4,27 @@ pipeline {
     environment {
         DOCKER_USER = "preethibino"
         IMAGE_NAME  = "ecommerce-app"
+	GITHUB_CRED  = "github-pass"
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                checkout scm
+                checkout([$class: 'GitSCM',
+                    branches: [[name: env.BRANCH_NAME]],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/Preetinarayanan131/guvifinalproject.git',
+                        credentialsId: "${GITHUB_CRED}"
+                    ]]
+                ])
             }
         }
 
         stage('Determine Branch') {
             steps {
                 script {
-                    // Use Jenkins-provided variable from SCM checkout
-                    BRANCH_NAME = env.GIT_BRANCH
-                    echo "Current branch detected: ${BRANCH_NAME}"
-                    // Normalize to remove origin/
-                    BRANCH_NAME = BRANCH_NAME.replaceFirst('origin/', '')
-                    echo "Normalized branch: ${BRANCH_NAME}"
+                   echo "Current branch: ${env.BRANCH_NAME}"
                 }
             }
         }
@@ -49,7 +51,7 @@ pipeline {
                     echo "Using branch: ${BRANCH_NAME}"
 
                     // Decide target repo based on branch
-                    def targetRepo = BRANCH_NAME == 'master' ? "${DOCKER_USER}/guvifinalproject-prod:latest" : "${DOCKER_USER}/guvifinalproject-dev:latest"
+                    def targetRepo = env.BRANCH_NAME == 'master' ? "${DOCKER_USER}/guvifinalproject-prod:latest" : "${DOCKER_USER}/guvifinalproject-dev:latest"
                     echo "Pushing image to ${targetRepo}"
 
                     sh """
@@ -63,7 +65,7 @@ pipeline {
         stage('Deploy Container on Port 80') {
             steps {
                 script {
-                    def IMAGE = BRANCH_NAME == 'master' ? "${DOCKER_USER}/guvifinalproject-prod:latest" : "${DOCKER_USER}/guvifinalproject-dev:latest"
+                    def IMAGE = env.BRANCH_NAME == 'master' ? "${DOCKER_USER}/guvifinalproject-prod:latest" : "${DOCKER_USER}/guvifinalproject-dev:latest"
 
                     sh """
                     docker stop ecommerce-container || true
