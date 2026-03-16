@@ -46,20 +46,17 @@ stages {
         steps {
 	  
           script{
-	    // Capture branch name in shell
+	  // Normalize branch
             def branch = BRANCH_NAME.replaceFirst('origin/', '')
             echo "Using branch: ${branch}"
 
-            sh """
-            if [ "${branch}" = "master" ]; then
-                TARGET="$DOCKER_USER/guvifinalproject-prod:latest"
-            else
-                TARGET="$DOCKER_USER/guvifinalproject-dev:latest"
-            fi
+            // Decide target repo
+            def targetRepo = branch == 'master' ? "${DOCKER_USER}/guvifinalproject-prod:latest" : "${DOCKER_USER}/guvifinalproject-dev:latest"
+            echo "Pushing image to ${targetRepo}"
 
-            echo "Pushing image to $TARGET"
-            docker tag $DOCKER_USER/$IMAGE_NAME:latest $TARGET
-            docker push $TARGET
+            sh """
+            docker tag $DOCKER_USER/$IMAGE_NAME:latest $targetRepo
+            docker push $targetRepo
             """
 	     }
         }
@@ -67,7 +64,8 @@ stages {
 
     stage('Deploy Container on Port 80') {
         steps {
-
+	 
+	  script{
 	    def branch = BRANCH_NAME.replaceFirst('origin/', '')
             def IMAGE = branch == 'master' ? "${DOCKER_USER}/guvifinalproject-prod:latest" : "${DOCKER_USER}/guvifinalproject-dev:latest"
             sh """
