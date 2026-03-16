@@ -1,7 +1,6 @@
 pipeline {
 agent any
 
-```
 environment {
     DOCKER_USER = "preethibino"
     IMAGE_NAME = "ecommerce-app"
@@ -77,6 +76,6 @@ stages {
         }
     }
 }
-```
+
 
 }
