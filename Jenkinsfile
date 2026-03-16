@@ -38,7 +38,7 @@ pipeline {
 
         stage('Login to Docker Hub') {
             steps {
-                withCredentials([string(credentialsId: '${DOCKER_PASS}', variable: 'DOCKER_PASS')]) {
+                withCredentials([string(credentialsId: 'docker-pass', variable: 'DOCKER_PASS')]) {
                     sh '''
                     echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                     '''
@@ -49,7 +49,7 @@ pipeline {
         stage('Tag & Push Image') {
             steps {
                 script {
-                    echo "Using branch: ${BRANCH_NAME}"
+                    
 
                     // Decide target repo based on branch
                     def targetRepo = env.BRANCH_NAME == 'master' ? "${DOCKER_USER}/guvifinalproject-prod:latest" : "${DOCKER_USER}/guvifinalproject-dev:latest"
