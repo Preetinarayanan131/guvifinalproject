@@ -18,7 +18,8 @@ stages {
     steps {
         script {
             // Get current branch from Git
-            BRANCH_NAME = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+            // Use Jenkins-provided environment variable
+            BRANCH_NAME = env.GIT_BRANCH
             echo "Current branch detected: ${BRANCH_NAME}"
         }
     }
