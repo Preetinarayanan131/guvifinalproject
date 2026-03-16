@@ -47,11 +47,11 @@ stages {
 	  
           script{
 	    // Capture branch name in shell
-            def branch = env.BRANCH_NAME
-            echo "Current branch: ${branch}"
+            def branch = BRANCH_NAME.replaceFirst('origin/', '')
+            echo "Using branch: ${branch}"
 
             sh """
-            if [ "${BRANCH_NAME}" = "master" ]; then
+            if [ "${branch}" = "master" ]; then
                 TARGET="$DOCKER_USER/guvifinalproject-prod:latest"
             else
                 TARGET="$DOCKER_USER/guvifinalproject-dev:latest"
@@ -67,21 +67,14 @@ stages {
 
     stage('Deploy Container on Port 80') {
         steps {
-            sh '''
+
+	    def branch = BRANCH_NAME.replaceFirst('origin/', '')
+            def IMAGE = branch == 'master' ? "${DOCKER_USER}/guvifinalproject-prod:latest" : "${DOCKER_USER}/guvifinalproject-dev:latest"
+            sh """
             docker stop ecommerce-container || true
             docker rm ecommerce-container || true
-
-            if [ "$BRANCH_NAME" = "master" ]; then
-                IMAGE="$DOCKER_USER/guvifinalproject-prod:latest"
-            else
-                IMAGE="$DOCKER_USER/guvifinalproject-dev:latest"
-            fi
-
-            docker run -d \
-              --name ecommerce-container \
-              -p 80:80 \
-              $IMAGE
-            '''
+            docker run -d --name ecommerce-container -p 80:80 $IMAGE
+            """
         }
     }
 }
