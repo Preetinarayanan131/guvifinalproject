@@ -1,9 +1,10 @@
 pipeline {
 agent any
 
+
 environment {
     DOCKER_USER = "preethibino"
-    IMAGE_NAME = "ecommerce-app"
+    IMAGE_NAME  = "ecommerce-app"
 }
 
 stages {
@@ -14,20 +15,13 @@ stages {
         }
     }
 
-    stage('Show Branch') {
-        steps {
-            echo "Building branch: ${env.BRANCH_NAME}"
-        }
-    }
-
     stage('Build Docker Image') {
         steps {
-            sh '''
-            docker build -t $DOCKER_USER/$IMAGE_NAME:latest .
-            '''
+            sh 'docker build -t $DOCKER_USER/$IMAGE_NAME:latest .'
         }
     }
 
+    // YOUR EXISTING LOGIN (UNCHANGED)
     stage('Login to Docker Hub') {
         steps {
             withCredentials([string(credentialsId: 'docker-pass', variable: 'DOCKER_PASS')]) {
@@ -38,26 +32,22 @@ stages {
         }
     }
 
-    stage('Push to DEV Repo') {
-        when {
-            branch 'dev'
-        }
+    // 🔥 ALWAYS RUNS — NO SKIP ISSUE
+    stage('Tag & Push Image') {
         steps {
             sh '''
-            docker tag $DOCKER_USER/$IMAGE_NAME:latest $DOCKER_USER/guvifinalproject-dev:latest
-            docker push $DOCKER_USER/ecommerce-dev:latest
-            '''
-        }
-    }
+            echo "Current branch: $BRANCH_NAME"
 
-    stage('Push to PROD Repo') {
-        when {
-            branch 'master'
-        }
-        steps {
-            sh '''
-            docker tag $DOCKER_USER/$IMAGE_NAME:latest $DOCKER_USER/guvifinalproject-prod:latest
-            docker push $DOCKER_USER/ecommerce-prod:latest
+            if [ "$BRANCH_NAME" = "master" ]; then
+                TARGET="$DOCKER_USER/guvifinalproject-prod:latest"
+            else
+                TARGET="$DOCKER_USER/guvifinalproject-dev:latest"
+            fi
+
+            echo "Pushing image to $TARGET"
+
+            docker tag $DOCKER_USER/$IMAGE_NAME:latest $TARGET
+            docker push $TARGET
             '''
         }
     }
@@ -68,14 +58,19 @@ stages {
             docker stop ecommerce-container || true
             docker rm ecommerce-container || true
 
+            if [ "$BRANCH_NAME" = "master" ]; then
+                IMAGE="$DOCKER_USER/guvifinalproject-prod:latest"
+            else
+                IMAGE="$DOCKER_USER/guvifinalproject-dev:latest"
+            fi
+
             docker run -d \
               --name ecommerce-container \
               -p 80:80 \
-              $DOCKER_USER/guvifinalproject-dev:latest
+              $IMAGE
             '''
         }
     }
 }
-
 
 }
